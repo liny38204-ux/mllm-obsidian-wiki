@@ -1,0 +1,19 @@
+.DS_Store
+.claudian/
+.tmp-claudian-src/
+51作业.pptx
+
+# Local Obsidian workspace state
+.obsidian/workspace.json
+.obsidian/bookmarks.json
+.obsidian/app.json
+.obsidian/appearance.json
+.obsidian/graph.json
+
+# Local plugin data with secrets/session state
+.obsidian/plugins/claudian/data.json
+
+# Local Claude/OS metadata
+.claude/.DS_Store
+.claude/skills/.DS_Store
+.claude/disabled-commands-*/

@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "printf '%s\n' '{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"This turn changed files. Before ending the response, if validation or review has not been run yet, explicitly ask the user whether they want you to run the vali subagent.\"}}'",
+            "statusMessage": "Running vali reminder hook"
+          }
+        ]
+      }
+    ]
+  }
+}

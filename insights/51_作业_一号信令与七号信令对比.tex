@@ -1,0 +1,347 @@
+\documentclass[12pt,a4paper]{ctexart}
+
+% ── 页面设置 ──
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{fancyvrb}
+\usepackage{enumitem}
+\usepackage{amsmath}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!60!black,
+    urlcolor=blue!60!black,
+    citecolor=blue!60!black
+}
+
+% ── 自制表格单元换行 ──
+\usepackage{makecell}
+\renewcommand{\theadfont}{\small\bfseries}
+
+% ── 代码/行内标识 ──
+\definecolor{codebg}{gray}{0.92}
+\newcommand{\code}[1]{\texttt{#1}}
+
+% ── 文档信息 ──
+\title{\textbf{一号信令与七号信令对比} \\ \large 作业}
+\author{}
+\date{2026-05-06}
+
+\begin{document}
+
+\pagestyle{plain}
+
+\maketitle
+
+% ============================================================
+\section{纯数据通信（如 HTTP）底层也有 TCP 握手，是不是通信网络定义的信令？有何异同？}
+
+\textbf{答案}
+
+TCP 握手\textbf{不是}通信网络领域中定义的“信令”，二者有本质区别。
+
+\begin{table}[htbp]
+\centering
+\scriptsize
+\begin{tabular}{>{\bfseries}p{3cm} p{5.5cm} p{5.5cm}}
+\toprule
+\textbf{维度} & \textbf{TCP 三次握手} & \textbf{通信网络信令（如 SS7）} \\
+\midrule
+目的 &
+建立端到端的可靠传输通道，保证数据有序到达 &
+在网元间传递控制指令，完成呼叫建立、拆线、路由、计费等功能 \\
+\addlinespace
+作用范围 &
+仅涉及通信两端的主机协议栈 &
+涉及多个网络节点（交换机、HLR、MSC、STP 等）的协同 \\
+\addlinespace
+信息语义 &
+简单的状态同步（SYN、SYN-ACK、ACK），无业务语义 &
+包含主被叫号码、业务类型、位置信息、计费信息等丰富业务语义 \\
+\addlinespace
+是否承载用户数据 &
+不承载（握手期间不传应用数据） &
+不承载用户语音/数据，只传控制信息 \\
+\addlinespace
+独立性 &
+是传输层协议的一部分，与应用层无关 &
+独立于用户数据通道，有专门的信令网络 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{相同点}
+\begin{itemize}
+  \item 都属于\textbf{控制面}行为，不直接传输用户业务数据
+  \item 都涉及“建立~—~维持~—~释放”的连接生命周期管理
+  \item 都依赖\textbf{状态机}来实现协议逻辑
+\end{itemize}
+
+\subsection*{不同点的核心}
+TCP 握手是\textbf{传输层机制}，解决的是“数据包能否可靠到达”的问题；通信信令是\textbf{网络层及以上}的控制协议，解决的是“业务应该如何被路由、计费、管理”的问题。前者是通用通信基础设施，后者是特定于电信业务的控制逻辑。
+
+% ============================================================
+\section{呼叫管理 / 会话管理是不是只和打电话有关？传统呼叫管理与广义会话管理有何异同？}
+
+\textbf{答案}
+
+\textbf{不限于打电话。}传统意义上的呼叫管理（Call Management）专指电话网中的呼叫控制；广义的会话管理（Session Management）已经扩展到所有需要维护状态、协商参数的通信场景。
+
+\begin{table}[htbp]
+\centering
+\scriptsize
+\begin{tabular}{>{\bfseries}p{3cm} p{5.2cm} p{5.8cm}}
+\toprule
+\textbf{维度} & \textbf{传统呼叫管理（Call Mgmt）} & \textbf{广义会话管理（Session Mgmt）} \\
+\midrule
+适用场景 &
+PSTN/PLMN 电话呼叫 &
+VoLTE、VoIP、IMS、WebRTC、HTTP Session 等 \\
+\addlinespace
+核心功能 &
+呼叫建立、振铃、接听、拆线 &
+会话创建、参数协商（编解码、带宽）、修改、终止 \\
+\addlinespace
+状态模型 &
+简单：空闲$\rightarrow$振铃$\rightarrow$通话$\rightarrow$释放 &
+复杂：支持会话暂停、转移、多方加入、媒体流增减 \\
+\addlinespace
+控制实体 &
+MSC（移动交换中心） &
+CSCF（呼叫会话控制功能）、SIP 服务器 \\
+\addlinespace
+承载内容 &
+仅语音 &
+语音、视频、即时消息、文件传输、在线游戏等 \\
+\addlinespace
+与信令关系 &
+直接对应 SS7 的 ISUP/TUP &
+通过 SIP 等协议实现，与 Diameter 配合完成认证计费 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{核心区别}
+传统呼叫管理是“一次性管道管理”——建立一条语音通路，用完即拆；广义会话管理是“多媒体会话协商与维护”——它管理的内容包括媒体类型、编解码格式、服务质量、安全参数等，远超传统电话的范畴。
+
+% ============================================================
+\section{SIP 和 Diameter 的基本定位}
+
+\subsection{SIP（Session Initiation Protocol）}
+
+\begin{table}[htbp]
+\centering
+\scriptsize
+\begin{tabular}{>{\bfseries}p{2.8cm} p{11.2cm}}
+\toprule
+\textbf{维度} & \textbf{说明} \\
+\midrule
+协议类型 & 应用层控制协议（文本协议，类似 HTTP） \\
+\addlinespace
+主要解决问题 & 创建、修改和终止多媒体会话（语音、视频、IM 等） \\
+\addlinespace
+工作层面/环节 & IMS 网络中的\textbf{会话控制层}，位于 UE 与 CSCF 之间、以及 S-CSCF 与 I-CSCF/S-CSCF 之间 \\
+\addlinespace
+传递的控制信息 & 会话描述信息（invite 中含 SDP 描述的媒体参数）、用户可达性（注册）、会话路由（消息头中的路由信息） \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Diameter}
+
+\begin{table}[htbp]
+\centering
+\scriptsize
+\begin{tabular}{>{\bfseries}p{2.8cm} p{11.2cm}}
+\toprule
+\textbf{维度} & \textbf{说明} \\
+\midrule
+协议类型 & 应用层控制协议（二进制协议，AAA 框架的演进，代替 RADIUS） \\
+\addlinespace
+主要解决问题 & 认证（Authentication）、授权（Authorization）、计费（Accounting） \\
+\addlinespace
+工作层面/环节 & IMS 网络中的\textbf{业务控制层和策略层}，主要位于 CSCF/AS 与 HSS 之间、PCRF 与 PCEF 之间 \\
+\addlinespace
+传递的控制信息 & 用户认证信息、签约数据（用户业务权限）、计费数据、策略控制规则（QoS 策略、流过滤规则） \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{核心区别一句话}
+\begin{itemize}
+  \item \textbf{SIP} 负责“会话怎么建立、怎么改、怎么拆”
+  \item \textbf{Diameter} 负责“谁可以用、能用什么、用完了怎么算钱”
+\end{itemize}
+
+% ============================================================
+\section{SIP 与 Diameter 的异同比较}
+
+\subsection{控制对象不同}
+
+\begin{table}[htbp]
+\centering
+\scriptsize
+\begin{tabular}{>{\bfseries}p{2.5cm} p{11.5cm}}
+\toprule
+\textbf{协议} & \textbf{控制对象} \\
+\midrule
+SIP &
+多媒体\textbf{会话本身}——谁参与、什么媒体类型、什么编解码、会话何时结束 \\
+\addlinespace
+Diameter &
+用户的\textbf{接入权限和资源配额}——用户是否被允许使用某项业务、可以享受什么服务质量等级、用量如何记录 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{消息内容不同}
+
+\begin{table}[htbp]
+\centering
+\scriptsize
+\begin{tabular}{>{\bfseries}p{2.5cm} p{11.5cm}}
+\toprule
+\textbf{协议} & \textbf{消息内容} \\
+\midrule
+SIP &
+文本格式，类 HTTP 风格。核心方法：\code{INVITE}、\code{ACK}、\code{BYE}、\code{REGISTER}、\code{UPDATE} 等。消息体中携带 SDP（Session Description Protocol）描述媒体信息 \\
+\addlinespace
+Diameter &
+二进制格式，由消息头和 AVPs（Attribute-Value Pairs）组成。核心命令：\code{CER/CEA}（能力交换）、\code{MAR/MAA}（多媒体认证）、\code{SAR/SAA}（签约数据获取）、\code{RAR/RAA}（重认证授权）等 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{使用场景不同}
+
+\begin{table}[htbp]
+\centering
+\scriptsize
+\begin{tabular}{>{\bfseries}p{2.5cm} p{11.5cm}}
+\toprule
+\textbf{协议} & \textbf{典型场景} \\
+\midrule
+SIP &
+用户发起 VoLTE 呼叫、视频通话、IMS 注册、即时消息发送、会议邀请 \\
+\addlinespace
+Diameter &
+UE 附着到 IMS 网络时的认证、查询用户是否开通 VoLTE 服务、实时计费、PCRF 下发 QoS 策略 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{在一次 VoLTE 呼叫中各自承担的作用}
+
+一次典型的 VoLTE 呼叫流程（简化）：
+
+\begin{enumerate}
+  \item \textbf{UE 发起注册}：
+    \begin{itemize}
+      \item 先通过 \textbf{Diameter}（Cx 接口）向 HSS 认证用户身份并获取签约数据
+      \item 再通过 \textbf{SIP}（Mw 接口）向 S-CSCF 注册用户可达地址
+    \end{itemize}
+  \item \textbf{主叫发起呼叫}：
+    \begin{itemize}
+      \item \textbf{SIP \code{INVITE}} 消息携带被叫号码和 SDP 媒体信息，经 P-CSCF $\rightarrow$ S-CSCF 送达被叫侧
+      \item 同时 P-CSCF 通过 \textbf{Diameter（Rx 接口）}向 PCRF 请求专用承载的 QoS 策略
+    \end{itemize}
+  \item \textbf{被叫响应}：
+    \begin{itemize}
+      \item SIP \textbf{183 Session Progress / 200 OK} 响应携带协商后的 SDP
+      \item PCRF 通过 \textbf{Diameter（Gx 接口）}向 PGW 下发承载策略，建立专用 EPS 承载
+    \end{itemize}
+  \item \textbf{通话进行}：
+    \begin{itemize}
+      \item SIP 负责会话状态维护
+      \item Diameter 负责计费信息的实时上报（Rf 接口）
+    \end{itemize}
+  \item \textbf{通话结束}：
+    \begin{itemize}
+      \item SIP \textbf{BYE} 释放会话
+      \item Diameter 终止计费记录
+    \end{itemize}
+\end{enumerate}
+
+\textbf{总结}：SIP 是“前台”——负责看得见的会话控制；Diameter 是“后台”——负责看不见的认证、授权、策略、计费支撑。
+
+% ============================================================
+\section{SIP 和 Diameter 是否可以看作现代通信网络中的“信令”？为什么？}
+
+\textbf{可以。} SIP 和 Diameter 本质上就是现代通信网络中 No.\,7 信令的替代者和演进者。
+
+\subsection*{它们不传用户业务数据}
+\begin{itemize}
+  \item \textbf{SIP} 只传会话控制消息（INVITE、BYE 等），实际的媒体流（语音、视频）通过 RTP 单独传输
+  \item \textbf{Diameter} 只传控制面消息（认证向量、计费记录等），不承载用户数据
+  \item 这与 SS7 中的 ISUP 消息只传控制指令、不传语音完全一致
+\end{itemize}
+
+\subsection*{它们承担控制、协调、管理作用}
+\begin{itemize}
+  \item \textbf{SIP} 负责会话的创建、修改、终止，等同于 SS7 中 \textbf{ISUP} 的呼叫控制功能
+  \item \textbf{Diameter} 负责认证、授权、计费，承担了 SS7 中 \textbf{MAP}（移动应用部分）的部分位置管理和 \textbf{INAP} 的智能网控制功能
+  \item 二者配合覆盖了 SS7 的主要控制面职能：呼叫控制 + 移动性管理 + 业务控制
+\end{itemize}
+
+\subsection*{与 SS7/No.\,7 的思想相似之处}
+\begin{table}[htbp]
+\centering
+\scriptsize
+\begin{tabular}{p{5.5cm} p{8.5cm}}
+\toprule
+\textbf{No.\,7 信令思想} & \textbf{SIP / Diameter 中的对应} \\
+\midrule
+\textbf{局间信令}，在网元间传递控制信息，与用户业务通道分离 &
+SIP 在 CSCF 间传递，Diameter 在 HSS/PCRF 与 CSCF 间传递，同样与 RTP 媒体面分离 \\
+\addlinespace
+\textbf{分层架构}（MTP、SCCP、TCAP、ISUP、MAP） &
+同样架构分层：传输层（TCP/SCTP）、协议层（SIP/Diameter）、业务层（IMS AS） \\
+\addlinespace
+\textbf{全局码/点码路由} &
+通过 DNS/ENUM 实现 E.164 到 SIP URI 的全局路由 \\
+\addlinespace
+\textbf{事务处理能力}（TCAP 支持多个并发的查询/响应） &
+Diameter 的会话级事务模型，SIP 的对话/事务模型 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{与传统局间信令的明显差别}
+\begin{table}[htbp]
+\centering
+\scriptsize
+\begin{tabular}{p{5.5cm} p{8.5cm}}
+\toprule
+\textbf{传统 SS7 特点} & \textbf{SIP/Diameter 的新变化} \\
+\midrule
+\textbf{面向电路}：信令与电路绑定（ISUP 控制特定 TDM 电路） &
+\textbf{面向分组/会话}：控制的是 IP 网络中的多媒体会话，无专用电路概念 \\
+\addlinespace
+\textbf{专用信令网}：有独立的信令链路、STP 路由器 &
+\textbf{共用 IP 网}：信令与数据共享同一 IP 传输网络 \\
+\addlinespace
+\textbf{协议栈封闭}：从 MTP1 到 TCAP 全部标准化 &
+\textbf{开放协议栈}：建在 TCP/UDP/SCTP 之上，与互联网协议体系融合 \\
+\addlinespace
+\textbf{集中式控制}：MSC 是呼叫控制的中心节点 &
+\textbf{分布式/虚拟化}：CSCF 可分布式部署，信令处理可在云化环境中灵活扩展 \\
+\addlinespace
+\textbf{文本格式有限}：SS7 是纯二进制协议 &
+\textbf{SIP 文本化}：SIP 采用类 HTTP 的文本协议，易于调试和扩展 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{结论}
+SIP 和 Diameter 不仅是“可以看作”信令，它们就是\textbf{现代电信核心网的信令协议}。正如 SS7 是 TDM 时代电路交换网络的控制神经，SIP + Diameter 是 IMS/IP 时代分组交换多媒体网络的控制神经。两者的核心本质完全一致——\textbf{控制面与用户面分离、在网元间传递控制指令来驱动业务逻辑}。
+
+\vfill
+\centering
+\small
+*完成时间：2026-05-06*
+
+\end{document}
